@@ -5,15 +5,16 @@ import { ipV4ToUint8Array } from "./Utils";
 import { DomainName } from "./Utils/DomainUtils";
 import ZoneHandler, { DNSZoneRequest, DNSZoneResponse } from "./ZoneHandler";
 
-
 const server: DNSServer = new DNSServer();
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const com_queekus_responder = (zone: string, request: DNSZoneRequest, response: DNSZoneResponse): void => {
+const com_queekus_responder = (zone: string, request: DNSZoneRequest, response: DNSZoneResponse): void =>
+{
     if (request.zoneQuestion.qClass.value !== Class.IN)
         return;
 
-    switch (request.zoneQuestion.qType.value) {
+    switch (request.zoneQuestion.qType.value)
+    {
         case Type.A:
         {
             switch (request.getAuthoritativeQueryForZone(zone))
@@ -56,14 +57,14 @@ const com_responder = (zone: string, request: DNSZoneRequest, response: DNSZoneR
                     response.addAdditionals(DNSProtocolResourceRecord.of(nameserver[0], new UInt16(Type.A), new UInt16(Class.IN), new UInt16(60 * 5), new UInt16(nameserver[2].length), nameserver[2]));
                 });
             break;
-        case /[^\.]+\.facebook/.test(request.getAuthoritativeQueryForZone(zone)):
+        case /[^\.]+\.anotherdomain/.test(request.getAuthoritativeQueryForZone(zone)):
             [
-                [new DomainName("ns39.domaincontrol.com."), ipV4ToUint8Array("97.74.109.20")],
-                [new DomainName("ns40.domaincontrol.com."), ipV4ToUint8Array("173.201.77.20")]
+                [new DomainName("ns39.domaincontrol.com."), ipV4ToUint8Array("1.2.3.4")],
+                [new DomainName("ns40.domaincontrol.com."), ipV4ToUint8Array("2.3.4.5")]
             ].map((nameserver: [DomainName, Uint8Array]) => [nameserver[0], nameserver[0].encode(), nameserver[1]])
                 .forEach((nameserver: [DomainName, Buffer, Uint8Array]) =>
                 {
-                    response.addAuthorities(DNSProtocolResourceRecord.of("facebook.com.", new UInt16(Type.NS), new UInt16(Class.IN), new UInt16(60 * 5), new UInt16(nameserver[1].length), nameserver[1]));
+                    response.addAuthorities(DNSProtocolResourceRecord.of("anotherdomain.com.", new UInt16(Type.NS), new UInt16(Class.IN), new UInt16(60 * 5), new UInt16(nameserver[1].length), nameserver[1]));
                     response.addAdditionals(DNSProtocolResourceRecord.of(nameserver[0], new UInt16(Type.A), new UInt16(Class.IN), new UInt16(60 * 5), new UInt16(nameserver[2].length), nameserver[2]));
                 });
             break;
