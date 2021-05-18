@@ -1,9 +1,9 @@
 import Parser from "./Parser";
 
-export class DomainName extends Parser
+export class DomainName extends Parser<string>
 {
-    public get domain(): string { return this._domain; }
-    public set domain(value: string) { this._domain = value; }
+    public get value(): string { return this._domain; }
+    public set value(value: string) { this._domain = value; }
 
     constructor(
         protected _domain: string = ""
@@ -72,5 +72,10 @@ export class DomainName extends Parser
         }
 
         return decodedBufferLength;
+    }
+
+    public toString(): string
+    {
+        return this._domain;
     }
 }

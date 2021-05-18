@@ -40,7 +40,7 @@ server.subZone(new ZoneHandler("com.queekus").authoritative((zone: string, reque
                  */
                 case "":
                 {
-                    response.addAnswers(DNSProtocolResourceRecord.of("@", new UInt16(Type.A), new UInt16(Class.IN), new UInt16(60 * 5), new UInt16(4), ipV4ToUint8Array("192.168.0.10")));
+                    response.addAnswers(DNSProtocolResourceRecord.of("@", new UInt16(Type.A), new UInt16(Class.IN), new UInt16(60 * 5), new UInt16(4), Parser.encode(IPv4, "192.168.0.10")));
                     break;
                 }
             }

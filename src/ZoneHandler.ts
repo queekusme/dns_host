@@ -1,4 +1,5 @@
 import * as net from "net";
+import Cache from "./Protocol/Cache";
 
 import { DNSProtocolHeader, DNSProtocolQuestion, DNSProtocolResourceRecord, DNSProtocol } from "./Protocol/ProtocolTypes";
 import { getAuthoritativePartFromQuestionName } from "./Utils";
@@ -15,7 +16,7 @@ export class DNSZoneRequest
 
     public getAuthoritativeQueryForZone(currentZone: string): string
     {
-        return getAuthoritativePartFromQuestionName(currentZone, this.zoneQuestion.qName.domain);
+        return getAuthoritativePartFromQuestionName(currentZone, this.zoneQuestion.qName.value);
     }
 }
 
@@ -38,7 +39,7 @@ export class DNSZoneResponse
     public addAnswers(...answers: DNSProtocolResourceRecord[]): void
     {
         for(const answer of answers)
-            answer.name.domain = answer.name.domain.replace(/@/g, this.origin);
+            answer.name.value = answer.name.value.replace(/@/g, this.origin);
 
         this.zoneAnswers.push(...answers);
     }
@@ -51,7 +52,7 @@ export class DNSZoneResponse
     public addAdditionals(...additionals: DNSProtocolResourceRecord[]): void
     {
         for(const additional of additionals)
-            additional.name.domain = additional.name.domain.replace(/@/g, this.origin);
+            additional.name.value = additional.name.value.replace(/@/g, this.origin);
 
         this.zoneAdditionals.push(...additionals);
     }
@@ -64,7 +65,7 @@ export class DNSZoneResponse
     public addAuthorities(...authorities: DNSProtocolResourceRecord[]): void
     {
         for(const authority of authorities)
-            authority.name.domain = authority.name.domain.replace(/@/g, this.origin);
+            authority.name.value = authority.name.value.replace(/@/g, this.origin);
 
         this.zoneAuthorities.push(...authorities);
     }
@@ -93,7 +94,7 @@ export class DNSQuery
 
             queries.push({
                 request: new DNSZoneRequest(reverseOrderDomain, this.protocolIn.header, question),
-                response: new DNSZoneResponse(this.protocolOut.header, question.qName.domain)
+                response: new DNSZoneResponse(this.protocolOut.header, question.qName.value)
             });
         }
 
@@ -107,6 +108,7 @@ export default class ZoneHandler
     protected authoritativeResponder: ZoneResponder | null = null;
 
     protected subHandlers: ZoneHandler[] = [];
+    protected cache: Cache | undefined = undefined;
 
     constructor(
         public readonly label: string
@@ -162,6 +164,13 @@ export default class ZoneHandler
         return this;
     }
 
+    public useCache(handler: Cache): ZoneHandler
+    {
+        this.cache = handler;
+
+        return this;
+    }
+
     /**
      * Set the authoritative ZoneResponder for this zone.
      *
@@ -204,6 +213,9 @@ export default class ZoneHandler
             // Respond with our responders by default
             for(const responder of this.zoneResponders)
                 responder(accLabel, zoneQuery.request, zoneQuery.response);
+
+            // TODO: Implement Cache Support
+            const answer: DNSProtocolResourceRecord[] = this.cache?.get(zoneQuery.request.zoneQuestion.qName) ?? [];
 
             const zone: ZoneHandler | null = this.getHandlerForZone(zoneQuery.request.zoneName, (currentZone: ZoneHandler) =>
             {

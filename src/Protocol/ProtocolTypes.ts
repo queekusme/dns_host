@@ -69,7 +69,7 @@ export type Bit = 0 | 1;
 export enum Type
 {
     /**
-     * A Host Address
+     * A Host Address (IPv4)
      */
     A = 1,
 
@@ -154,7 +154,12 @@ export enum Type
     /**
      * Text Strings
      */
-    TX = 16
+    TX = 16,
+
+    /**
+     * A Host Address (IPv6)
+     */
+    AAAA = 28
 }
 
 export enum QTypeAdditionals
@@ -207,8 +212,11 @@ export enum Class
     HS = 4
 }
 
-export class DNSProtocolHeader extends Parser
+export class DNSProtocolHeader extends Parser<undefined>
 {
+    public get value(): undefined { return undefined;  }
+    public set value(v: undefined) { }
+
     /**
      * A 16 bit identifier assigned by the program that
      * generates any kind of query.  This identifier is copied
@@ -387,8 +395,11 @@ export class DNSProtocolHeader extends Parser
     }
 }
 
-export class DNSProtocolQuestion extends Parser
+export class DNSProtocolQuestion extends Parser<undefined>
 {
+    public get value(): undefined { return undefined;  }
+    public set value(v: undefined) { }
+
     /**
      * A domain name represented as a sequence of labels, where
      * each label consists of a length octet followed by that
@@ -441,8 +452,17 @@ export class DNSProtocolQuestion extends Parser
     }
 }
 
-export class DNSProtocolResourceRecord extends Parser
+export enum DNSProtocolResourceRecordDataIdentifier
 {
+    UNKNOWN, Name, IPv4, IPv6
+}
+
+export class DNSProtocolResourceRecord extends Parser<undefined>
+{
+
+    public get value(): undefined { return undefined;  }
+    public set value(v: undefined) { }
+
     /**
      * A domain name to which this resource record pertains
      *
@@ -491,6 +511,12 @@ export class DNSProtocolResourceRecord extends Parser
      * Represented as an array of octets
      */
     public rData: Uint8Array = new Uint8Array();
+
+    /**
+     * An identifier which can be set to allow for easier identification of the provided data,
+     * UNDEFINED for all incoming data, no assumptions are made
+     */
+    public rDataType: DNSProtocolResourceRecordDataIdentifier = DNSProtocolResourceRecordDataIdentifier.UNKNOWN;
 
     /**
      * Construct a DNSProtocolResourceRecord from constituant parts
@@ -547,8 +573,10 @@ export class DNSProtocolResourceRecord extends Parser
     }
 }
 
-export class DNSProtocol extends Parser
+export class DNSProtocol extends Parser<undefined>
 {
+    public get value(): undefined { return undefined;  }
+    public set value(v: undefined) { }
     /**
      * The header of this DNS Packet
      */
@@ -574,7 +602,7 @@ export class DNSProtocol extends Parser
      */
     public readonly additionals: DNSProtocolResourceRecord[] = [];
 
-    private static _encode<T extends Parser>(parsable: T): [Buffer, number]
+    private static _encode<T extends Parser<K>, K>(parsable: T): [Buffer, number]
     {
         const data: Buffer = parsable.encode();
 

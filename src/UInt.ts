@@ -1,17 +1,14 @@
 import Parser from "./Utils/Parser";
 
-abstract class UInt extends Parser
+abstract class UInt extends Parser<number>
 {
+    public get value() { return this._value; }
+    public set value(value: number) { this._value = value % this.limit; }
+
     constructor(
         protected limit: number,
         protected _value: number = 0
     ) { super(); }
-
-    public get value() { return this._value; }
-
-    public set value(value: number) {
-        this._value = value % this.limit;
-    }
 }
 
 export class UInt4 extends UInt
