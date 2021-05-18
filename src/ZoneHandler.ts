@@ -1,7 +1,7 @@
 import * as net from "net";
 import Cache from "./Protocol/Cache";
 
-import { DNSProtocolHeader, DNSProtocolQuestion, DNSProtocolResourceRecord, DNSProtocol } from "./Protocol/ProtocolTypes";
+import { DNSProtocolHeader, DNSProtocolQuestion, DNSProtocolResourceRecord, DNSProtocol, DNSProtocolResourceRecordAcceptedTypes } from "./Protocol/ProtocolTypes";
 import { getAuthoritativePartFromQuestionName } from "./Utils";
 
 export type ZoneResponder = (zone: string, request: DNSZoneRequest, response: DNSZoneResponse) => void;
@@ -22,21 +22,21 @@ export class DNSZoneRequest
 
 export class DNSZoneResponse
 {
-    protected zoneAnswers: DNSProtocolResourceRecord[] = [];
-    protected zoneAdditionals: DNSProtocolResourceRecord[] = [];
-    protected zoneAuthorities: DNSProtocolResourceRecord[] = [];
+    protected zoneAnswers: DNSProtocolResourceRecord<DNSProtocolResourceRecordAcceptedTypes>[] = [];
+    protected zoneAdditionals: DNSProtocolResourceRecord<DNSProtocolResourceRecordAcceptedTypes>[] = [];
+    protected zoneAuthorities: DNSProtocolResourceRecord<DNSProtocolResourceRecordAcceptedTypes>[] = [];
 
     constructor(
         public outgoingHeader: Readonly<DNSProtocolHeader>,
         protected origin: string
     ) { }
 
-    public getAnswers(): DNSProtocolResourceRecord[]
+    public getAnswers(): DNSProtocolResourceRecord<DNSProtocolResourceRecordAcceptedTypes>[]
     {
         return this.zoneAnswers;
     }
 
-    public addAnswers(...answers: DNSProtocolResourceRecord[]): void
+    public addAnswers(...answers: DNSProtocolResourceRecord<DNSProtocolResourceRecordAcceptedTypes>[]): void
     {
         for(const answer of answers)
             answer.name.value = answer.name.value.replace(/@/g, this.origin);
@@ -44,12 +44,12 @@ export class DNSZoneResponse
         this.zoneAnswers.push(...answers);
     }
 
-    public getAdditionals(): DNSProtocolResourceRecord[]
+    public getAdditionals(): DNSProtocolResourceRecord<DNSProtocolResourceRecordAcceptedTypes>[]
     {
         return this.zoneAdditionals;
     }
 
-    public addAdditionals(...additionals: DNSProtocolResourceRecord[]): void
+    public addAdditionals(...additionals: DNSProtocolResourceRecord<DNSProtocolResourceRecordAcceptedTypes>[]): void
     {
         for(const additional of additionals)
             additional.name.value = additional.name.value.replace(/@/g, this.origin);
@@ -57,12 +57,12 @@ export class DNSZoneResponse
         this.zoneAdditionals.push(...additionals);
     }
 
-    public getAuthorities(): DNSProtocolResourceRecord[]
+    public getAuthorities(): DNSProtocolResourceRecord<DNSProtocolResourceRecordAcceptedTypes>[]
     {
         return this.zoneAuthorities;
     }
 
-    public addAuthorities(...authorities: DNSProtocolResourceRecord[]): void
+    public addAuthorities(...authorities: DNSProtocolResourceRecord<DNSProtocolResourceRecordAcceptedTypes>[]): void
     {
         for(const authority of authorities)
             authority.name.value = authority.name.value.replace(/@/g, this.origin);

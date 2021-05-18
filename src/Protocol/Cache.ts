@@ -1,4 +1,4 @@
-import { DNSProtocolResourceRecordDataIdentifier } from "./ProtocolTypes";
+import { DNSProtocolResourceRecordAcceptedTypes, Type } from "./ProtocolTypes";
 import { DomainName } from "Utils/DomainUtils";
 import { DNSProtocolResourceRecord } from "./ProtocolTypes";
 
@@ -20,12 +20,12 @@ export default abstract class Cache
     /**
      * Put a record into cache, using the current datetime to establish ttl boundries
      */
-    public abstract put(records: DNSProtocolResourceRecord[], current: Date): void
+    public abstract put(records: DNSProtocolResourceRecord<DNSProtocolResourceRecordAcceptedTypes>[], current: Date): void
 
     /**
      * Get a record from cache (if exsists) based on the name requested
      */
-    public abstract get(key: DomainName | string): DNSProtocolResourceRecord[]
+    public abstract get(key: DomainName | string): DNSProtocolResourceRecord<DNSProtocolResourceRecordAcceptedTypes>[]
 
     /**
      * Manually invalidate a cache record based on its name
@@ -35,7 +35,7 @@ export default abstract class Cache
 
 interface ICacheEntry
 {
-    record: DNSProtocolResourceRecord;
+    record: DNSProtocolResourceRecord<DNSProtocolResourceRecordAcceptedTypes>;
     lastUpdated: Date;
 }
 
@@ -48,7 +48,7 @@ export class BasicMemoryCache extends Cache
 {
     protected cache: IBasicMemoryCache = {};
 
-    public put(records: DNSProtocolResourceRecord[], current: Date): void
+    public put(records: DNSProtocolResourceRecord<DNSProtocolResourceRecordAcceptedTypes>[], current: Date): void
     {
         for(const cacheRecord of records)
         {
@@ -59,9 +59,9 @@ export class BasicMemoryCache extends Cache
         }
     }
 
-    public get(key: string | DomainName): DNSProtocolResourceRecord[]
+    public get(key: string | DomainName): DNSProtocolResourceRecord<DNSProtocolResourceRecordAcceptedTypes>[]
     {
-        const data: DNSProtocolResourceRecord[] = [];
+        const data: DNSProtocolResourceRecord<DNSProtocolResourceRecordAcceptedTypes>[] = [];
 
         const cacheEntry: ICacheEntry | undefined = this.cache[key.toString()];
 
@@ -71,14 +71,11 @@ export class BasicMemoryCache extends Cache
         if(Date.now() > (cacheEntry.lastUpdated.getTime() + cacheEntry.record.ttl.value * 1000))
             this.invalidate(key);
 
-        switch(cacheEntry.record.rDataType)
+        switch(cacheEntry.record.type.value)
         {
-            case DNSProtocolResourceRecordDataIdentifier.IPv4: break;
-            case DNSProtocolResourceRecordDataIdentifier.IPv6: break;
-            case DNSProtocolResourceRecordDataIdentifier.Name: break;
-            case DNSProtocolResourceRecordDataIdentifier.UNKNOWN:
-            // eslint-disable-next-line no-fallthrough
-            default: break;
+            case Type.CNAME:
+                data.push(...this.get(cacheEntry.record.rData.value)); break;
+            default: break; // If not explicitly defined, data needs no further cache lookups
 
         }
 

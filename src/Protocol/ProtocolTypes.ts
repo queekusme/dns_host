@@ -212,6 +212,10 @@ export enum Class
     HS = 4
 }
 
+// Allow anything which can be parsed as an accepted type
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type DNSProtocolResourceRecordAcceptedTypes = Parser<any>;
+
 export class DNSProtocolHeader extends Parser<undefined>
 {
     public get value(): undefined { return undefined;  }
@@ -452,16 +456,15 @@ export class DNSProtocolQuestion extends Parser<undefined>
     }
 }
 
-export enum DNSProtocolResourceRecordDataIdentifier
-{
-    UNKNOWN, Name, IPv4, IPv6
-}
-
-export class DNSProtocolResourceRecord extends Parser<undefined>
+export class DNSProtocolResourceRecord<T extends DNSProtocolResourceRecordAcceptedTypes> extends Parser<undefined>
 {
 
     public get value(): undefined { return undefined;  }
     public set value(v: undefined) { } // eslint-disable-line @typescript-eslint/no-empty-function
+
+    constructor(
+        protected Parser?: new () => T
+    ) { super(); }
 
     /**
      * A domain name to which this resource record pertains
@@ -499,7 +502,7 @@ export class DNSProtocolResourceRecord extends Parser<undefined>
      * An unsigned 16 bit integer that specifies the length in
      * octets of the RDATA field
      */
-    public get rdLength(): UInt16 { return new UInt16(this.rData.length); }
+    public get rdLength(): UInt16 { return new UInt16(this.rData.encode().length); }
 
     /**
      * A variable length string of octets that describes the
@@ -510,28 +513,22 @@ export class DNSProtocolResourceRecord extends Parser<undefined>
      *
      * Represented as an array of octets
      */
-    public rData: Uint8Array = new Uint8Array();
-
-    /**
-     * An identifier which can be set to allow for easier identification of the provided data,
-     * UNDEFINED for all incoming data, no assumptions are made
-     */
-    public rDataType: DNSProtocolResourceRecordDataIdentifier = DNSProtocolResourceRecordDataIdentifier.UNKNOWN;
+    public rData: DNSProtocolResourceRecordAcceptedTypes;
 
     /**
      * Construct a DNSProtocolResourceRecord from constituant parts
      *
      * @returns Constructed DNSProtocolResourceRecord
      */
-    public static of(
+    public static of<K extends DNSProtocolResourceRecordAcceptedTypes>(
         name: string | DomainName,
         type: Type,
         rClass: Class,
         ttl: number,
-        rData: Uint8Array
-    ): DNSProtocolResourceRecord
+        rData: K
+    ): DNSProtocolResourceRecord<K>
     {
-        const record: DNSProtocolResourceRecord = new DNSProtocolResourceRecord();
+        const record: DNSProtocolResourceRecord<K> = new DNSProtocolResourceRecord();
         record.name = (name instanceof DomainName) ? name : new DomainName(name);
         record.type = new UInt16(type);
         record.rClass = new UInt16(rClass);
@@ -549,9 +546,13 @@ export class DNSProtocolResourceRecord extends Parser<undefined>
         decodedBufferLength += this.ttl.decode(data.slice(decodedBufferLength, decodedBufferLength + 4));
         decodedBufferLength += this.rdLength.decode(data.slice(decodedBufferLength, decodedBufferLength + 2));
 
-        this.rData = data.slice(decodedBufferLength, decodedBufferLength + this.rdLength.value);
+        if(this.Parser !== undefined)
+        {
+            this.rData = new this.Parser();
+            this.rData.decode(data.slice(decodedBufferLength, decodedBufferLength + this.rdLength.value));
+        }
 
-        decodedBufferLength += this.rData.length;
+        decodedBufferLength += this.rdLength.value;
 
         return decodedBufferLength;
     }
@@ -563,7 +564,7 @@ export class DNSProtocolResourceRecord extends Parser<undefined>
         const rClass: Buffer = this.rClass.encode();
         const ttl: Buffer = this.ttl.encode();
         const rdLength: Buffer = this.rdLength.encode();
-        const rData: Buffer = Buffer.from(this.rData);
+        const rData: Buffer = this.rData.encode();
 
         return Buffer.concat(
             [ name, type, rClass, ttl, rdLength, rData ],
@@ -588,17 +589,20 @@ export class DNSProtocol extends Parser<undefined>
     /**
      * Answers included in this DNS Packet
      */
-    public readonly answers: DNSProtocolResourceRecord[] = [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    public readonly answers: DNSProtocolResourceRecord<any>[] = [];
 
     /**
      * Name Server Records included in this DNS Packet
      */
-    public readonly authorities: DNSProtocolResourceRecord[] = [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    public readonly authorities: DNSProtocolResourceRecord<any>[] = [];
 
     /**
      * Additonal Resource Records in this DNS Packet
      */
-    public readonly additionals: DNSProtocolResourceRecord[] = [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    public readonly additionals: DNSProtocolResourceRecord<any>[] = [];
 
     private static _encode<T extends Parser<K>, K>(parsable: T): [Buffer, number]
     {

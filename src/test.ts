@@ -1,5 +1,4 @@
 import { IPv4 } from "./Utils/IPAddressUtils";
-import Parser from "./Utils/Parser";
 import DNSServer from "./DNSServer";
 import { Class, Type, DNSProtocolResourceRecord } from "./Protocol/ProtocolTypes";
 import { DomainName } from "./Utils/DomainUtils";
@@ -22,15 +21,15 @@ const com_queekus_responder = (zone: string, request: DNSZoneRequest, response: 
                 case "www":
                 {
                     response.addAnswers(
-                        DNSProtocolResourceRecord.of("www.@", Type.CNAME, Class.IN, 60 * 5, Parser.encode(DomainName, "queekus.com."))
+                        DNSProtocolResourceRecord.of("www.@", Type.CNAME, Class.IN, 60 * 5, new DomainName("queekus.com."))
                     );
                 }
                 // eslint-disable-next-line no-fallthrough
                 case "":
                 {
                     response.addAnswers(
-                        DNSProtocolResourceRecord.of("@", Type.A, Class.IN, 60 * 5, Parser.encode(IPv4, "192.30.252.153")),
-                        DNSProtocolResourceRecord.of("@", Type.A, Class.IN, 60 * 5, Parser.encode(IPv4, "192.30.252.154"))
+                        DNSProtocolResourceRecord.of("@", Type.A, Class.IN, 60 * 5, new IPv4("192.30.252.153")),
+                        DNSProtocolResourceRecord.of("@", Type.A, Class.IN, 60 * 5, new IPv4("192.30.252.154"))
                     );
                     break;
                 }
@@ -48,25 +47,23 @@ const com_responder = (zone: string, request: DNSZoneRequest, response: DNSZoneR
     {
         case /[^\.]+\.queekus/.test(request.getAuthoritativeQueryForZone(zone)):
             [
-                [new DomainName("ns39.domaincontrol.com."), Parser.encode(IPv4, "97.74.109.20")],
-                [new DomainName("ns40.domaincontrol.com."), Parser.encode(IPv4, "173.201.77.20")]
-            ].map((nameserver: [DomainName, Buffer]) => [nameserver[0], nameserver[0].encode(), nameserver[1]])
-                .forEach((nameserver: [DomainName, Buffer, Buffer]) =>
-                {
-                    response.addAuthorities(DNSProtocolResourceRecord.of("queekus.com.", Type.A, Class.IN, 60 * 5, nameserver[1]));
-                    response.addAdditionals(DNSProtocolResourceRecord.of(nameserver[0], Type.A, Class.IN, 60 * 5, nameserver[2]));
-                });
+                [new DomainName("ns39.domaincontrol.com."), new IPv4("97.74.109.20")],
+                [new DomainName("ns40.domaincontrol.com."), new IPv4("173.201.77.20")]
+            ].forEach((nameserver: [DomainName, IPv4]) =>
+            {
+                response.addAuthorities(DNSProtocolResourceRecord.of("queekus.com.", Type.A, Class.IN, 60 * 5, nameserver[0]));
+                response.addAdditionals(DNSProtocolResourceRecord.of(nameserver[0], Type.A, Class.IN, 60 * 5, nameserver[1]));
+            });
             break;
         case /[^\.]+\.anotherdomain/.test(request.getAuthoritativeQueryForZone(zone)):
             [
-                [new DomainName("ns39.domaincontrol.com."), Parser.encode(IPv4, "1.2.3.4")],
-                [new DomainName("ns40.domaincontrol.com."), Parser.encode(IPv4, "2.3.4.5")]
-            ].map((nameserver: [DomainName, Buffer]) => [nameserver[0], nameserver[0].encode(), nameserver[1]])
-                .forEach((nameserver: [DomainName, Buffer, Buffer]) =>
-                {
-                    response.addAuthorities(DNSProtocolResourceRecord.of("anotherdomain.com.", Type.A, Class.IN, 60 * 5, nameserver[1]));
-                    response.addAdditionals(DNSProtocolResourceRecord.of(nameserver[0], Type.A, Class.IN, 60 * 5, nameserver[2]));
-                });
+                [new DomainName("ns39.domaincontrol.com."), new IPv4("1.2.3.4")],
+                [new DomainName("ns40.domaincontrol.com."), new IPv4("2.3.4.5")]
+            ].forEach((nameserver: [DomainName, IPv4]) =>
+            {
+                response.addAuthorities(DNSProtocolResourceRecord.of("anotherdomain.com.", Type.A, Class.IN, 60 * 5, nameserver[0]));
+                response.addAdditionals(DNSProtocolResourceRecord.of(nameserver[0], Type.A, Class.IN, 60 * 5, nameserver[1]));
+            });
             break;
     }
 };
