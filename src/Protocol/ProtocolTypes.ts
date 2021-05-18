@@ -525,17 +525,17 @@ export class DNSProtocolResourceRecord extends Parser<undefined>
      */
     public static of(
         name: string | DomainName,
-        type: UInt16,
-        rClass: UInt16,
-        ttl: UInt32,
+        type: Type,
+        rClass: Class,
+        ttl: number,
         rData: Uint8Array
     ): DNSProtocolResourceRecord
     {
         const record: DNSProtocolResourceRecord = new DNSProtocolResourceRecord();
         record.name = (name instanceof DomainName) ? name : new DomainName(name);
-        record.type = type;
-        record.rClass = rClass;
-        record.ttl = ttl;
+        record.type = new UInt16(type);
+        record.rClass = new UInt16(rClass);
+        record.ttl = new UInt32(ttl);
         record.rData = rData;
 
         return record;

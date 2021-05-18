@@ -123,11 +123,11 @@ export default class ZoneHandler
      */
     public getHandlerForZone(fullLabel: string, callback?: (currentHandler: ZoneHandler) => void): ZoneHandler | null
     {
-        if(fullLabel === this.label)
-            return this;
-
         if(callback !== undefined)
             callback(this);
+
+        if(fullLabel === this.label)
+            return this;
 
         for(const handler of this.subHandlers)
         {

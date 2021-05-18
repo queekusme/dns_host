@@ -29,14 +29,14 @@ server.subZone(new ZoneHandler("com.queekus").authoritative((zone: string, reque
             {
                 // Example CNAME
                 case "www":
-                    response.addAnswers(DNSProtocolResourceRecord.of("www.@", new UInt16(Type.CNAME), new UInt16(Class.IN), new UInt16(60 * 5), Parser.encode(DomainName, "queekus.com.")));
+                    response.addAnswers(DNSProtocolResourceRecord.of("www.@", Type.CNAME, Class.IN, 60 * 5, Parser.encode(DomainName, "queekus.com.")));
                 /**
                  * In this example we fallthrough into the
                  * default return values so that we return
                  * the CNAME with data relevant to its return value
                  */
                 case "":
-                    response.addAnswers(DNSProtocolResourceRecord.of("@", new UInt16(Type.A), new UInt16(Class.IN), new UInt16(60 * 5), new UInt16(4), Parser.encode(IPv4, "192.168.0.10")));
+                    response.addAnswers(DNSProtocolResourceRecord.of("@", Type.A, Class.IN, 60 * 5, Parser.encode(IPv4, "192.168.0.10")));
                     break;
             }
         }
