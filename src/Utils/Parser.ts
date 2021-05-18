@@ -15,7 +15,7 @@ export default abstract class Parser<K>
      */
     public abstract decode(data: Buffer): number;
 
-    public static encode<T extends Parser<K>, K>(ParserClass: new (...args: any[]) => T, data: K): Buffer
+    public static encode<T extends Parser<K>, K>(ParserClass: new () => T, data: K): Buffer
     {
         const parser: T = new ParserClass();
         parser.value = data;
@@ -23,7 +23,7 @@ export default abstract class Parser<K>
         return parser.encode();
     }
 
-    public static decode<T extends Parser<K>, K>(ParserClass: new (...args: any[]) => T, data: Buffer): K
+    public static decode<T extends Parser<K>, K>(ParserClass: new () => T, data: Buffer): K
     {
         const parser: T = new ParserClass();
         parser.decode(data);

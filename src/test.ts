@@ -1,9 +1,8 @@
-import { IPv4 } from "Utils/IPAddressUtils";
-import Parser from "Utils/Parser";
+import { IPv4 } from "./Utils/IPAddressUtils";
+import Parser from "./Utils/Parser";
 import DNSServer from "./DNSServer";
-import { Class, Type, DNSProtocolResourceRecord, DNSProtocolResourceRecordDataIdentifier } from "./Protocol/ProtocolTypes";
+import { Class, Type, DNSProtocolResourceRecord } from "./Protocol/ProtocolTypes";
 import { UInt16 } from "./UInt";
-import { ipV4ToUint8Array } from "./Utils";
 import { DomainName } from "./Utils/DomainUtils";
 import ZoneHandler, { DNSZoneRequest, DNSZoneResponse } from "./ZoneHandler";
 
@@ -23,17 +22,16 @@ const com_queekus_responder = (zone: string, request: DNSZoneRequest, response: 
             {
                 case "www":
                 {
-                    const com_queekus: Buffer = new DomainName("queekus.com.").encode();
                     response.addAnswers(
-                        DNSProtocolResourceRecord.of("www.@", new UInt16(Type.CNAME), new UInt16(Class.IN), new UInt16(60 * 5), new UInt16(com_queekus.length), com_queekus)
+                        DNSProtocolResourceRecord.of("www.@", new UInt16(Type.CNAME), new UInt16(Class.IN), new UInt16(60 * 5), Parser.encode(DomainName, "queekus.com."))
                     );
                 }
                 // eslint-disable-next-line no-fallthrough
                 case "":
                 {
                     response.addAnswers(
-                        DNSProtocolResourceRecord.of("@", new UInt16(Type.A), new UInt16(Class.IN), new UInt16(60 * 5), new UInt16(4), Parser.encode(IPv4, "192.30.252.153")),
-                        DNSProtocolResourceRecord.of("@", new UInt16(Type.A), new UInt16(Class.IN), new UInt16(60 * 5), new UInt16(4), Parser.encode(IPv4, "192.30.252.154"))
+                        DNSProtocolResourceRecord.of("@", new UInt16(Type.A), new UInt16(Class.IN), new UInt16(60 * 5), Parser.encode(IPv4, "192.30.252.153")),
+                        DNSProtocolResourceRecord.of("@", new UInt16(Type.A), new UInt16(Class.IN), new UInt16(60 * 5), Parser.encode(IPv4, "192.30.252.154"))
                     );
                     break;
                 }
@@ -42,6 +40,7 @@ const com_queekus_responder = (zone: string, request: DNSZoneRequest, response: 
     }
 };
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const com_responder = (zone: string, request: DNSZoneRequest, response: DNSZoneResponse): void => {
     if (request.zoneQuestion.qClass.value !== Class.IN)
         return;
@@ -55,8 +54,8 @@ const com_responder = (zone: string, request: DNSZoneRequest, response: DNSZoneR
             ].map((nameserver: [DomainName, Buffer]) => [nameserver[0], nameserver[0].encode(), nameserver[1]])
                 .forEach((nameserver: [DomainName, Buffer, Buffer]) =>
                 {
-                    response.addAuthorities(DNSProtocolResourceRecord.of("queekus.com.", new UInt16(Type.NS), new UInt16(Class.IN), new UInt16(60 * 5), new UInt16(nameserver[1].length), nameserver[1]));
-                    response.addAdditionals(DNSProtocolResourceRecord.of(nameserver[0], new UInt16(Type.A), new UInt16(Class.IN), new UInt16(60 * 5), new UInt16(nameserver[2].length), nameserver[2]));
+                    response.addAuthorities(DNSProtocolResourceRecord.of("queekus.com.", new UInt16(Type.NS), new UInt16(Class.IN), new UInt16(60 * 5), nameserver[1]));
+                    response.addAdditionals(DNSProtocolResourceRecord.of(nameserver[0], new UInt16(Type.A), new UInt16(Class.IN), new UInt16(60 * 5), nameserver[2]));
                 });
             break;
         case /[^\.]+\.anotherdomain/.test(request.getAuthoritativeQueryForZone(zone)):
@@ -66,8 +65,8 @@ const com_responder = (zone: string, request: DNSZoneRequest, response: DNSZoneR
             ].map((nameserver: [DomainName, Buffer]) => [nameserver[0], nameserver[0].encode(), nameserver[1]])
                 .forEach((nameserver: [DomainName, Buffer, Buffer]) =>
                 {
-                    response.addAuthorities(DNSProtocolResourceRecord.of("anotherdomain.com.", new UInt16(Type.NS), new UInt16(Class.IN), new UInt16(60 * 5), new UInt16(nameserver[1].length), nameserver[1]));
-                    response.addAdditionals(DNSProtocolResourceRecord.of(nameserver[0], new UInt16(Type.A), new UInt16(Class.IN), new UInt16(60 * 5), new UInt16(nameserver[2].length), nameserver[2]));
+                    response.addAuthorities(DNSProtocolResourceRecord.of("anotherdomain.com.", new UInt16(Type.NS), new UInt16(Class.IN), new UInt16(60 * 5), nameserver[1]));
+                    response.addAdditionals(DNSProtocolResourceRecord.of(nameserver[0], new UInt16(Type.A), new UInt16(Class.IN), new UInt16(60 * 5), nameserver[2]));
                 });
             break;
     }

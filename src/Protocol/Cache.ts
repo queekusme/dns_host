@@ -55,7 +55,7 @@ export class BasicMemoryCache extends Cache
             this.cache[cacheRecord.name.toString()] = {
                 record: cacheRecord,
                 lastUpdated: current
-            }
+            };
         }
     }
 

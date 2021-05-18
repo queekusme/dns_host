@@ -215,7 +215,7 @@ export enum Class
 export class DNSProtocolHeader extends Parser<undefined>
 {
     public get value(): undefined { return undefined;  }
-    public set value(v: undefined) { }
+    public set value(v: undefined) { } // eslint-disable-line @typescript-eslint/no-empty-function
 
     /**
      * A 16 bit identifier assigned by the program that
@@ -398,7 +398,7 @@ export class DNSProtocolHeader extends Parser<undefined>
 export class DNSProtocolQuestion extends Parser<undefined>
 {
     public get value(): undefined { return undefined;  }
-    public set value(v: undefined) { }
+    public set value(v: undefined) { } // eslint-disable-line @typescript-eslint/no-empty-function
 
     /**
      * A domain name represented as a sequence of labels, where
@@ -461,7 +461,7 @@ export class DNSProtocolResourceRecord extends Parser<undefined>
 {
 
     public get value(): undefined { return undefined;  }
-    public set value(v: undefined) { }
+    public set value(v: undefined) { } // eslint-disable-line @typescript-eslint/no-empty-function
 
     /**
      * A domain name to which this resource record pertains
@@ -499,7 +499,7 @@ export class DNSProtocolResourceRecord extends Parser<undefined>
      * An unsigned 16 bit integer that specifies the length in
      * octets of the RDATA field
      */
-    public rdLength: UInt16 = new UInt16();
+    public get rdLength(): UInt16 { return new UInt16(this.rData.length); }
 
     /**
      * A variable length string of octets that describes the
@@ -528,7 +528,6 @@ export class DNSProtocolResourceRecord extends Parser<undefined>
         type: UInt16,
         rClass: UInt16,
         ttl: UInt32,
-        rdLength: UInt16,
         rData: Uint8Array
     ): DNSProtocolResourceRecord
     {
@@ -537,7 +536,6 @@ export class DNSProtocolResourceRecord extends Parser<undefined>
         record.type = type;
         record.rClass = rClass;
         record.ttl = ttl;
-        record.rdLength = rdLength;
         record.rData = rData;
 
         return record;
@@ -576,7 +574,7 @@ export class DNSProtocolResourceRecord extends Parser<undefined>
 export class DNSProtocol extends Parser<undefined>
 {
     public get value(): undefined { return undefined;  }
-    public set value(v: undefined) { }
+    public set value(v: undefined) { } // eslint-disable-line @typescript-eslint/no-empty-function
     /**
      * The header of this DNS Packet
      */

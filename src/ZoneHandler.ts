@@ -215,7 +215,6 @@ export default class ZoneHandler
                 responder(accLabel, zoneQuery.request, zoneQuery.response);
 
             // TODO: Implement Cache Support
-            const answer: DNSProtocolResourceRecord[] = this.cache?.get(zoneQuery.request.zoneQuestion.qName) ?? [];
 
             const zone: ZoneHandler | null = this.getHandlerForZone(zoneQuery.request.zoneName, (currentZone: ZoneHandler) =>
             {

@@ -6,9 +6,15 @@ export class IPv4 extends Parser<string>
     public get value(): string { return this.address; }
     public set value(v: string) { this.address = v; }
 
-    constructor(
-        protected address: string
-    ){ super(); }
+    protected address: string = "";
+
+    constructor(address?: string)
+    {
+        super();
+
+        if(address !== undefined)
+            this.address = address;
+    }
 
     public encode(): Buffer
     {
@@ -28,9 +34,15 @@ export class IPv6 extends Parser<string>
     public get value(): string { return this.address; }
     public set value(v: string) { this.address = v; }
 
-    constructor(
-        protected address: string
-    ){ super(); }
+    protected address: string = "";
+
+    constructor(address?: string)
+    {
+        super();
+
+        if(address !== undefined)
+            this.address = address;
+    }
 
     public encode(): Buffer
     {
@@ -49,7 +61,7 @@ export class IPv6 extends Parser<string>
     {
         const buff: Buffer = Buffer.from(data); // Copy to preserve original data
         buff.swap16();
-        this.address = [...new Uint16Array(buff.buffer, buff.byteOffset, buff.length / 2)].map((part: number) => {return part.toString(16)}).join(":");
+        this.address = [...new Uint16Array(buff.buffer, buff.byteOffset, buff.length / 2)].map((part: number) => {return part.toString(16);}).join(":");
 
         return 16; // 8 * 2 (octets)
     }
