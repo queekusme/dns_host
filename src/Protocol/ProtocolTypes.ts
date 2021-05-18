@@ -1,4 +1,4 @@
-import { UInt16, UInt4 } from "../UInt";
+import { UInt16, UInt32, UInt4 } from "../UInt";
 import { DomainName } from "../Utils/DomainUtils";
 import Parser from "../Utils/Parser";
 
@@ -339,8 +339,7 @@ export class DNSProtocolHeader extends Parser
 
     public decode(data: Buffer): number
     {
-        const txId: Buffer = data.slice(0, 2);
-        this.txId.value = parseInt(txId.toString("hex"), 16);
+        this.txId.decode(data.slice(0, 2));
 
         const flags_1: Buffer = data.slice(2, 3);
         const flags_1_num: number = parseInt(flags_1.toString("hex"), 16);
@@ -360,44 +359,31 @@ export class DNSProtocolHeader extends Parser
         this.cd = ((flags_2_num >> 4) & 0b00000001) === 0 ? 0 : 1;
         this.rCode.value = (flags_2_num >> 0) & 0b00001111;
 
-        const qd: Buffer = data.slice(4, 6);
-        this.qdCount.value = parseInt(qd.toString("hex"), 16);
-
-        const an: Buffer = data.slice(6, 8);
-        this.anCount.value = parseInt(an.toString("hex"), 16);
-
-        const ns: Buffer = data.slice(8, 10);
-        this.nsCount.value = parseInt(ns.toString("hex"), 16);
-
-        const ar: Buffer = data.slice(10, 12);
-        this.arCount.value = parseInt(ar.toString("hex"), 16);
+        this.qdCount.decode(data.slice(4, 6));
+        this.anCount.decode(data.slice(6, 8));
+        this.nsCount.decode(data.slice(8, 10));
+        this.arCount.decode(data.slice(10, 12));
 
         return 12; // 6 pairs of 8 octets
     }
 
     public encode(): Buffer
     {
-        const rawData: number[] = [];
+        const txID: Buffer = this.txId.encode();
 
-        rawData.push((this.txId.value >> 8)); // TX upper bits
-        rawData.push((this.txId.value));      // TX lower bits
+        const flagsData: number[] = [];
+        flagsData.push((this.qr << 7) + (this.opcode.value << 6) + (this.aa << 2) + (this.tc << 1) + (this.rd << 0)); // Flags upper bits
+        flagsData.push((this.ra << 7) + (this.z << 6) + (this.ad << 5) + (this.cd << 4) + (this.rCode.value << 0));   // Flags lower bits
+        const flags: Buffer = Buffer.from(flagsData);
 
-        rawData.push((this.qr << 7) + (this.opcode.value << 6) + (this.aa << 2) + (this.tc << 1) + (this.rd << 0)); // Flags upper bits
-        rawData.push((this.ra << 7) + (this.z << 6) + (this.ad << 5) + (this.cd << 4) + (this.rCode.value << 0));   // Flags lower bits
+        const qdCount: Buffer = this.qdCount.encode();
+        const anCount: Buffer = this.anCount.encode();
+        const nsCount: Buffer = this.nsCount.encode();
+        const arCount: Buffer = this.arCount.encode();
 
-        rawData.push((this.qdCount.value >> 8)); // QD upper bits
-        rawData.push((this.qdCount.value));      // QD lower bits
-
-        rawData.push((this.anCount.value >> 8)); // AN upper bits
-        rawData.push((this.anCount.value));      // AN lower bits
-
-        rawData.push((this.nsCount.value >> 8)); // NS upper bits
-        rawData.push((this.nsCount.value));      // NS lower bits
-
-        rawData.push((this.arCount.value >> 8)); // AR upper bits
-        rawData.push((this.arCount.value));      // AR lower bits
-
-        return Buffer.from(rawData);
+        return Buffer.concat(
+            [txID, flags, qdCount, anCount, nsCount, arCount ],
+            txID.length + flags.length + qdCount.length + anCount.length + nsCount.length + arCount.length);
     }
 }
 
@@ -439,20 +425,8 @@ export class DNSProtocolQuestion extends Parser
     public decode(data: Buffer): number
     {
         let decodedBufferLength: number = this.qName.decode(data);
-
-        const qTypeBuff: Buffer = data.slice(decodedBufferLength, decodedBufferLength + 2);
-        const qType: number = parseInt(qTypeBuff.toString("hex"), 16);
-
-        decodedBufferLength += 2;
-
-        const qClassBuff: Buffer = data.slice(decodedBufferLength, decodedBufferLength + 2);
-        const qClass: number = parseInt(qClassBuff.toString("hex"), 16);
-
-        decodedBufferLength += 2;
-
-        // Name is set by decode above
-        this.qType.value = qType;
-        this.qClass.value = qClass;
+        decodedBufferLength += this.qType.decode(data.slice(decodedBufferLength, decodedBufferLength + 2));
+        decodedBufferLength += this.qClass.decode(data.slice(decodedBufferLength, decodedBufferLength + 2));
 
         return decodedBufferLength;
     }
@@ -460,12 +434,10 @@ export class DNSProtocolQuestion extends Parser
     public encode(): Buffer
     {
         const name: Buffer = this.qName.encode();
+        const type: Buffer = this.qType.encode();
+        const qClass: Buffer = this.qType.encode();
 
-        return Buffer.concat([
-            name,
-            Buffer.from([this.qType.value >> 8, this.qType.value]),
-            Buffer.from([this.qClass.value >> 8, this.qClass.value])
-        ], name.length + 2 + 2); // 2 octets per data part
+        return Buffer.concat([name, type, qClass ], name.length + type.length + qClass.length);
     }
 }
 
@@ -501,7 +473,7 @@ export class DNSProtocolResourceRecord extends Parser
      * interpreted to mean that the RR can only be used for the
      * transaction in progress, and should not be cached
      */
-    public ttl: UInt16 = new UInt16();
+    public ttl: UInt32 = new UInt32();
 
     /**
      * An unsigned 16 bit integer that specifies the length in
@@ -529,7 +501,7 @@ export class DNSProtocolResourceRecord extends Parser
         name: string | DomainName,
         type: UInt16,
         rClass: UInt16,
-        ttl: UInt16,
+        ttl: UInt32,
         rdLength: UInt16,
         rData: Uint8Array
     ): DNSProtocolResourceRecord
@@ -545,23 +517,33 @@ export class DNSProtocolResourceRecord extends Parser
         return record;
     }
 
-    public decode(/* data: Buffer */): number
+    public decode(data: Buffer): number
     {
-        throw new Error("Not Implemented");
+        let decodedBufferLength: number = this.name.decode(data);
+        decodedBufferLength += this.type.decode(data.slice(decodedBufferLength, decodedBufferLength + 2));
+        decodedBufferLength += this.rClass.decode(data.slice(decodedBufferLength, decodedBufferLength + 2));
+        decodedBufferLength += this.ttl.decode(data.slice(decodedBufferLength, decodedBufferLength + 4));
+        decodedBufferLength += this.rdLength.decode(data.slice(decodedBufferLength, decodedBufferLength + 2));
+
+        this.rData = data.slice(decodedBufferLength, decodedBufferLength + this.rdLength.value);
+
+        decodedBufferLength += this.rData.length;
+
+        return decodedBufferLength;
     }
 
     public encode(): Buffer
     {
         const name: Buffer = this.name.encode();
+        const type: Buffer = this.type.encode();
+        const rClass: Buffer = this.rClass.encode();
+        const ttl: Buffer = this.ttl.encode();
+        const rdLength: Buffer = this.rdLength.encode();
+        const rData: Buffer = Buffer.from(this.rData);
 
-        return Buffer.concat([
-            name,
-            Buffer.from([this.type.value >> 8, this.type.value]),
-            Buffer.from([this.rClass.value >> 8, this.rClass.value]),
-            Buffer.from([this.ttl.value >> 24, this.ttl.value >> 16, this.ttl.value >> 8, this.ttl.value]),
-            Buffer.from([this.rdLength.value >> 8, this.rdLength.value]),
-            Buffer.from(this.rData)
-        ], name.length + 2 + 2 + 4 + 2 + this.rData.length); // 2 octets for type, class and rdLength, 4 octets for ttl
+        return Buffer.concat(
+            [ name, type, rClass, ttl, rdLength, rData ],
+            name.length + type.length + rClass.length + ttl.length + rdLength.length + rData.length);
     }
 }
 
