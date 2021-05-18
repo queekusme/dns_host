@@ -1,8 +1,8 @@
 import * as net from "net";
+import { DomainName } from "./Utils/DomainUtils";
 import Cache from "./Protocol/Cache";
 
 import { DNSProtocolHeader, DNSProtocolQuestion, DNSProtocolResourceRecord, DNSProtocol, DNSProtocolResourceRecordAcceptedTypes } from "./Protocol/ProtocolTypes";
-import { getAuthoritativePartFromQuestionName } from "./Utils";
 
 export type ZoneResponder = (zone: string, request: DNSZoneRequest, response: DNSZoneResponse) => void;
 
@@ -16,7 +16,15 @@ export class DNSZoneRequest
 
     public getAuthoritativeQueryForZone(currentZone: string): string
     {
-        return getAuthoritativePartFromQuestionName(currentZone, this.zoneQuestion.qName.value);
+        const questionFullName = this.zoneQuestion.qName.value;
+
+        let zoneName: string = currentZone;
+        if(zoneName.length > 0 && zoneName[0] === ".")
+            zoneName = new DomainName(zoneName).getReverse();
+
+        const fullParts: string = questionFullName.replace(zoneName, "");
+
+        return questionFullName.replace(zoneName, "").slice(0, fullParts.length - 1);
     }
 }
 

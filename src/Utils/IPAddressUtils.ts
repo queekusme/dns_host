@@ -1,4 +1,4 @@
-import { UInt16 } from "../UInt";
+import { UInt16 } from "./UInt";
 import Parser from "./Parser";
 
 export class IPv4 extends Parser<string>

@@ -1,4 +1,4 @@
-import Parser from "./Utils/Parser";
+import Parser from "./Parser";
 
 abstract class UInt extends Parser<number>
 {
