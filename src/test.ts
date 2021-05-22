@@ -1,7 +1,7 @@
 import { IPv4 } from "./Utils/IPAddressUtils";
 import DNSServer from "./DNSServer";
 import { Class, Type, DNSProtocolResourceRecord } from "./Protocol/ProtocolTypes";
-import { DomainName } from "./Utils/DomainUtils";
+import DomainName from "./Utils/DomainUtils";
 import ZoneHandler, { DNSZoneRequest, DNSZoneResponse } from "./ZoneHandler";
 
 const server: DNSServer = new DNSServer();

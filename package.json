@@ -4,7 +4,8 @@
   "description": "Simple extensible dns server framework",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",
+    "test": "env TS_NODE_COMPILER_OPTIONS='{\"module\": \"commonjs\" }' mocha -r ts-node/register 'tests/**/*.ts'",
+    "build": "npm run lint && tsc && npm run test",
     "build:watch": "tsc -w",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
@@ -12,10 +13,15 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
+    "@types/chai": "^4.2.18",
+    "@types/mocha": "^8.2.2",
     "@types/node": "^10.17.59",
     "@typescript-eslint/eslint-plugin": "^4.22.1",
     "@typescript-eslint/parser": "^4.22.1",
+    "chai": "^4.3.4",
     "eslint": "^7.26.0",
+    "mocha": "^8.4.0",
+    "ts-node": "^9.1.1",
     "typescript": "^4.2.4"
   }
 }

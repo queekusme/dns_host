@@ -1,5 +1,5 @@
 import { DNSProtocolResourceRecordAcceptedTypes, Type } from "./ProtocolTypes";
-import { DomainName } from "Utils/DomainUtils";
+import DomainName from "Utils/DomainUtils";
 import { DNSProtocolResourceRecord } from "./ProtocolTypes";
 
 /**
@@ -76,7 +76,6 @@ export class BasicMemoryCache extends Cache
             case Type.CNAME:
                 data.push(...this.get(cacheEntry.record.rData.value)); break;
             default: break; // If not explicitly defined, data needs no further cache lookups
-
         }
 
         return data;

@@ -1,5 +1,5 @@
 import { UInt16, UInt32, UInt4 } from "../Utils/UInt";
-import { DomainName } from "../Utils/DomainUtils";
+import DomainName from "../Utils/DomainUtils";
 import Parser from "../Utils/Parser";
 
 export enum QR

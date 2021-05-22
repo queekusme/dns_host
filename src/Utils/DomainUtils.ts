@@ -1,13 +1,27 @@
 import Parser from "./Parser";
 
-export class DomainName extends Parser<string>
+export default class DomainName extends Parser<string>
 {
     public get value(): string { return this._domain; }
     public set value(value: string) { this._domain = value; }
 
+    /**
+     * Create a representation of a domain name
+     *
+     * If a period '.' is not found at the beginning or end, one is automatically added at the end,
+     *
+     * e.g.
+     * - google.com would be come google.com.
+     */
     constructor(
         protected _domain: string = ""
-    ) { super(); }
+    )
+    {
+        super();
+
+        if((this._domain.split(".") as (string|undefined)[]).indexOf("") === -1)
+            this._domain = `${this._domain}.`;
+    }
 
     public clone(withAddition: string = ""): DomainName
     {
@@ -31,15 +45,16 @@ export class DomainName extends Parser<string>
 
     public encode(): Buffer
     {
-        const nameParts: string[] = (this._domain[0] === "." ? this.getReverse() : this._domain).split(".");
+        const nameParts: (string | undefined)[] = (this._domain[0] === "." ? this.getReverse() : this._domain).split(".");
+
         let nameBuff: Buffer = Buffer.from([]);
 
-        for(let i: number = 0; i < nameParts.length; i++)
+        for(const part of nameParts)
         {
-            if(i + 1 === nameParts.length)
+            if(part === undefined)
                 nameBuff = Buffer.concat([nameBuff, Buffer.from([0])], nameBuff.length + 1);
             else
-                nameBuff = Buffer.concat([nameBuff, Buffer.from([nameParts[i].length]), Buffer.from(nameParts[i])], nameBuff.length + 1 + nameParts[i].length);
+                nameBuff = Buffer.concat([nameBuff, Buffer.from([part.length]), Buffer.from(part)], nameBuff.length + 1 + part.length);
         }
 
         return nameBuff;
@@ -55,7 +70,15 @@ export class DomainName extends Parser<string>
             const labelLengthBuff: Buffer = data.slice(decodedBufferLength, decodedBufferLength + 1);
             const labelLength: number = parseInt(labelLengthBuff.toString("hex"), 16);
 
+            if(isNaN(labelLength))
+                throw new Error("Malformed Data, Label data stops prematurely");
+
             currentBufferOctetsProcessed++;
+
+            if(labelLength > data.length - currentBufferOctetsProcessed) // length > remaining buffer
+            {
+                throw new Error("Malformed Data, Label Length Greater than Remaining Buffer Size");
+            }
 
             if(labelLength === 0)
             {

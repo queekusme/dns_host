@@ -1,5 +1,5 @@
 import * as net from "net";
-import { DomainName } from "./Utils/DomainUtils";
+import DomainName from "./Utils/DomainUtils";
 import Cache from "./Protocol/Cache";
 
 import { DNSProtocolHeader, DNSProtocolQuestion, DNSProtocolResourceRecord, DNSProtocol, DNSProtocolResourceRecordAcceptedTypes } from "./Protocol/ProtocolTypes";
