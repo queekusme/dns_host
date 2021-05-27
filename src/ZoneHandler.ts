@@ -4,7 +4,26 @@ import Cache from "./Protocol/Cache";
 
 import { DNSProtocolHeader, DNSProtocolQuestion, DNSProtocolResourceRecord, DNSProtocol, DNSProtocolResourceRecordAcceptedTypes } from "./Protocol/ProtocolTypes";
 
-export type ZoneResponder = (zone: string, request: DNSZoneRequest, response: DNSZoneResponse) => void;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type ZoneTransferData = any;
+
+export type ZoneResponderHandler = (zone: string, request: DNSZoneRequest, response: DNSZoneResponse) => void;
+export type ZoneTransferHandler = (data: ZoneTransferData) => void;
+
+export interface ZoneResponder
+{
+    /**
+     * The authoritative handler for this responder
+     */
+    handler: ZoneResponderHandler;
+
+    /**
+     * NYI
+     *
+     * Handler for updating this responder to consider data recieved from a zone transfer
+     */
+    applyZoneTransfer?: ZoneTransferHandler;
+}
 
 export class DNSZoneRequest
 {
@@ -35,8 +54,7 @@ export class DNSZoneResponse
     protected zoneAuthorities: DNSProtocolResourceRecord<DNSProtocolResourceRecordAcceptedTypes>[] = [];
 
     constructor(
-        public outgoingHeader: Readonly<DNSProtocolHeader>,
-        protected origin: string
+        public outgoingHeader: Readonly<DNSProtocolHeader>
     ) { }
 
     public getAnswers(): DNSProtocolResourceRecord<DNSProtocolResourceRecordAcceptedTypes>[]
@@ -46,9 +64,6 @@ export class DNSZoneResponse
 
     public addAnswers(...answers: DNSProtocolResourceRecord<DNSProtocolResourceRecordAcceptedTypes>[]): void
     {
-        for(const answer of answers)
-            answer.name.value = answer.name.value.replace(/@/g, this.origin);
-
         this.zoneAnswers.push(...answers);
     }
 
@@ -59,9 +74,6 @@ export class DNSZoneResponse
 
     public addAdditionals(...additionals: DNSProtocolResourceRecord<DNSProtocolResourceRecordAcceptedTypes>[]): void
     {
-        for(const additional of additionals)
-            additional.name.value = additional.name.value.replace(/@/g, this.origin);
-
         this.zoneAdditionals.push(...additionals);
     }
 
@@ -72,9 +84,6 @@ export class DNSZoneResponse
 
     public addAuthorities(...authorities: DNSProtocolResourceRecord<DNSProtocolResourceRecordAcceptedTypes>[]): void
     {
-        for(const authority of authorities)
-            authority.name.value = authority.name.value.replace(/@/g, this.origin);
-
         this.zoneAuthorities.push(...authorities);
     }
 }
@@ -102,7 +111,7 @@ export class DNSQuery
 
             queries.push({
                 request: new DNSZoneRequest(reverseOrderDomain, this.protocolIn.header, question),
-                response: new DNSZoneResponse(this.protocolOut.header, question.qName.value)
+                response: new DNSZoneResponse(this.protocolOut.header)
             });
         }
 
@@ -118,9 +127,29 @@ export default class ZoneHandler
     protected subHandlers: ZoneHandler[] = [];
     protected cache: Cache | undefined = undefined;
 
-    constructor(
-        public readonly label: string
-    ) { }
+    public readonly label: string;
+
+    constructor(label: string | DomainName)
+    {
+        this.label = label instanceof DomainName ? label.value : label;
+
+        if(this.label.charAt(this.label.length -1) === ".")
+            this.label = new DomainName(this.label).getReverse().slice(1);
+
+        if(this.label.charAt(0) === ".")
+            this.label = this.label.slice(1);
+    }
+
+    /**
+     * Create a responder for a zone from a handler and optional zone transfer handler
+     */
+    public static createResponder(handler: ZoneResponderHandler, applyZoneTransfer?: ZoneTransferHandler): ZoneResponder
+    {
+        return {
+            handler,
+            applyZoneTransfer
+        };
+    }
 
     /**
      * Get a handler for a zone, calling an optional callback for each subsequent handler
@@ -180,6 +209,14 @@ export default class ZoneHandler
     }
 
     /**
+     * This method will be called and provided with zone transfer information
+     */
+    public updateFromZoneTransfer(/** data: ZoneTransferData */): void
+    {
+        throw new Error("Method not implemented.");
+    }
+
+    /**
      * Set the authoritative ZoneResponder for this zone.
      *
      * Will be called after all previously set middleware
@@ -220,7 +257,7 @@ export default class ZoneHandler
 
             // Respond with our responders by default
             for(const responder of this.zoneResponders)
-                responder(accLabel, zoneQuery.request, zoneQuery.response);
+                responder.handler(accLabel, zoneQuery.request, zoneQuery.response);
 
             // TODO: Implement Cache Support
 
@@ -229,11 +266,11 @@ export default class ZoneHandler
                 accLabel = (accLabel + "." + currentZone.label).replace(/\.+/g, ".");
                 // Respond with zone responders
                 for(const responder of currentZone.zoneResponders)
-                    responder(accLabel, zoneQuery.request, zoneQuery.response);
+                    responder.handler(accLabel, zoneQuery.request, zoneQuery.response);
             });
 
             if(zone !== null && zone.authoritativeResponder !== null)
-                zone.authoritativeResponder(accLabel, zoneQuery.request, zoneQuery.response);
+                zone.authoritativeResponder.handler(accLabel, zoneQuery.request, zoneQuery.response);
 
             // Update response to include answers from query
             query.protocolOut.answers.push(...zoneQuery.response.getAnswers());

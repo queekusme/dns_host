@@ -1,8 +1,10 @@
 import { IPv4 } from "./Utils/IPAddressUtils";
 import DNSServer from "./DNSServer";
-import { Class, Type, DNSProtocolResourceRecord } from "./Protocol/ProtocolTypes";
+import { Class, Type, DNSProtocolResourceRecord, DNSProtocolResourceRecordAcceptedTypes } from "./Protocol/ProtocolTypes";
 import DomainName from "./Utils/DomainUtils";
 import ZoneHandler, { DNSZoneRequest, DNSZoneResponse } from "./ZoneHandler";
+import { simpleResponder } from "./Responders/SimpleResponder";
+import { simpleLoggingResponder } from "./Responders/SimpleLoggingResponder";
 
 const server: DNSServer = new DNSServer();
 
@@ -68,14 +70,43 @@ const com_responder = (zone: string, request: DNSZoneRequest, response: DNSZoneR
     }
 };
 
+const queekus_com_name: DomainName = new DomainName("queekus.com.");
+
 // server.subZone(
 //     new ZoneHandler("com")
-//         .use((zone: string, request: DNSZoneRequest) => console.log(`${zone} - ${request.zoneQuestion.qName.value} ${Class[request.zoneQuestion.qClass.value]} ${Type[request.zoneQuestion.qType.value]}`))
-//         .authoritative(com_responder));
+//         .use(simpleLoggingResponder)
+//         .authoritative(ZoneHandler.createResponder(com_responder)));
+
+// server.subZone(
+//     new ZoneHandler(queekus_com_name)
+//         .use(simpleLoggingResponder)
+//         .authoritative(ZoneHandler.createResponder(com_queekus_responder)));
+
+
+const com_queekus_records: DNSProtocolResourceRecord<DNSProtocolResourceRecordAcceptedTypes>[] = [
+    DNSProtocolResourceRecord.of(queekus_com_name, Type.A, Class.IN, 60 * 5, new IPv4("192.30.252.153")),
+    DNSProtocolResourceRecord.of(queekus_com_name, Type.A, Class.IN, 60 * 5, new IPv4("192.30.252.154"))
+];
 
 server.subZone(
-    new ZoneHandler("com.queekus")
-        .use((zone: string, request: DNSZoneRequest) => console.log(`ZONE{${zone}} - ${request.zoneQuestion.qName.value} ${Class[request.zoneQuestion.qClass.value]} ${Type[request.zoneQuestion.qType.value]}`))
-        .authoritative(com_queekus_responder));
+    new ZoneHandler(queekus_com_name)
+        .use(simpleLoggingResponder)
+        .authoritative(simpleResponder([
+            {
+                authoritativeName: "",
+                recordClass: Class.IN,
+                recordType: Type.A,
+                records: com_queekus_records
+            },
+            {
+                authoritativeName: "www",
+                recordClass: Class.IN,
+                recordType: Type.A,
+                records: [
+                    DNSProtocolResourceRecord.of(queekus_com_name.clone("www"), Type.CNAME, Class.IN, 60 * 5, queekus_com_name),
+                    ...com_queekus_records
+                ]
+            }
+        ])));
 
 server.listen(() => console.log("DNS Server listening on port 53"));
