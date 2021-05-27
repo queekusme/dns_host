@@ -1,5 +1,5 @@
 {
-    "name": "dns_host",
+    "name": "@queekusme/dns_host",
     "version": "0.0.0",
     "description": "Simple extensible dns server framework",
     "scripts": {
@@ -24,5 +24,8 @@
         "np": "^7.5.0",
         "ts-node": "^9.1.1",
         "typescript": "^4.2.4"
+    },
+    "publishConfig": {
+        "access": "public"
     }
 }
