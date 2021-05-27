@@ -8,7 +8,7 @@
         "build:watch": "tsc -w",
         "lint": "eslint .",
         "lint:fix": "eslint . --fix",
-        "package": "np --no-release-draft"
+        "package": "np --no-release-draft --no-2fa"
     },
     "author": "",
     "license": "MIT",
