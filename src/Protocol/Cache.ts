@@ -1,5 +1,5 @@
 import { DNSProtocolResourceRecordAcceptedTypes, Type } from "./ProtocolTypes";
-import DomainName from "Utils/DomainUtils";
+import DomainName from "../Utils/DomainUtils";
 import { DNSProtocolResourceRecord } from "./ProtocolTypes";
 
 /**
