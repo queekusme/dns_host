@@ -1,3 +1,5 @@
+import * as winston from "winston";
+
 import { Class, DNSProtocolResourceRecord, DNSProtocolResourceRecordAcceptedTypes, Type } from "../Protocol/ProtocolTypes";
 import ZoneHandler, { DNSZoneRequest, DNSZoneResponse, ZoneResponder } from "../ZoneHandler";
 
@@ -19,7 +21,7 @@ export interface SimpleResponderDataRecord
  */
 export function simpleResponder(records: SimpleResponderDataRecord[]): ZoneResponder
 {
-    return ZoneHandler.createResponder((zone: string, request: DNSZoneRequest, response: DNSZoneResponse) =>
+    return ZoneHandler.createResponder((logger: winston.Logger | undefined, zone: string, request: DNSZoneRequest, response: DNSZoneResponse) =>
     {
         if (request.zoneQuestion.qClass.value !== Class.IN)
             return;

@@ -38,7 +38,7 @@ server.subZone(
                 recordClass: Class.IN,
                 recordType: Type.A,
                 records: [
-                    DNSProtocolResourceRecord.of(queekus_com_name.clone("www"), Type.CNAME, Class.IN, 60 * 5, queekus_com_name),
+                    DNSProtocolResourceRecord.of(queekus_com_name.asSubdomain("www"), Type.CNAME, Class.IN, 60 * 5, queekus_com_name),
                     ...com_queekus_records
                 ]
             }
@@ -73,7 +73,7 @@ server
                     {
                         // Example CNAME
                         case "www":
-                            response.addAnswers(DNSProtocolResourceRecord.of(queekus_com_name.clone("www"), Type.CNAME, Class.IN, 60 * 5, queekus_com_name));
+                            response.addAnswers(DNSProtocolResourceRecord.of(queekus_com_name.asSubdomain("www"), Type.CNAME, Class.IN, 60 * 5, queekus_com_name));
                         /**
                          * In this example we fallthrough into the
                          * default return values so that we return

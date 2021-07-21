@@ -1,4 +1,6 @@
 import * as net from "net";
+
+import { Logger } from "./Utils/LoggerUtils";
 import DomainName from "./Utils/DomainUtils";
 import Cache from "./Protocol/Cache";
 
@@ -7,7 +9,7 @@ import { DNSProtocolHeader, DNSProtocolQuestion, DNSProtocolResourceRecord, DNSP
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type ZoneTransferData = any;
 
-export type ZoneResponderHandler = (zone: string, request: DNSZoneRequest, response: DNSZoneResponse) => void;
+export type ZoneResponderHandler = (logger: Logger | undefined, zone: string, request: DNSZoneRequest, response: DNSZoneResponse) => void;
 export type ZoneTransferHandler = (data: ZoneTransferData) => void;
 
 export interface ZoneResponder
@@ -127,6 +129,8 @@ export default class ZoneHandler
     protected subHandlers: ZoneHandler[] = [];
     protected cache: Cache | undefined = undefined;
 
+    protected logger: Logger | undefined;
+
     public readonly label: string;
 
     constructor(label: string | DomainName)
@@ -245,6 +249,17 @@ export default class ZoneHandler
     }
 
     /**
+     * Register a logger for this Zone Handler to use,
+     * Logger is passed to zone handler functions
+     */
+    public useLogger(logger: Logger): ZoneHandler
+    {
+        this.logger = logger;
+
+        return this;
+    }
+
+    /**
      * Respond to a query from the current Zone Handler
      *
      * @param query - query to respond to
@@ -257,7 +272,7 @@ export default class ZoneHandler
 
             // Respond with our responders by default
             for(const responder of this.zoneResponders)
-                responder.handler(accLabel, zoneQuery.request, zoneQuery.response);
+                responder.handler(this.logger, accLabel, zoneQuery.request, zoneQuery.response);
 
             // TODO: Implement Cache Support
 
@@ -266,11 +281,11 @@ export default class ZoneHandler
                 accLabel = (accLabel + "." + currentZone.label).replace(/\.+/g, ".");
                 // Respond with zone responders
                 for(const responder of currentZone.zoneResponders)
-                    responder.handler(accLabel, zoneQuery.request, zoneQuery.response);
+                    responder.handler(currentZone.logger, accLabel, zoneQuery.request, zoneQuery.response);
             });
 
             if(zone !== null && zone.authoritativeResponder !== null)
-                zone.authoritativeResponder.handler(accLabel, zoneQuery.request, zoneQuery.response);
+                zone.authoritativeResponder.handler(this.logger, accLabel, zoneQuery.request, zoneQuery.response);
 
             // Update response to include answers from query
             query.protocolOut.answers.push(...zoneQuery.response.getAnswers());

@@ -1,15 +1,24 @@
+import * as winston from "winston";
+
 import { IPv4 } from "./Utils/IPAddressUtils";
 import DNSServer from "./DNSServer";
+import { Logger } from "./Utils/LoggerUtils";
 import { Class, Type, DNSProtocolResourceRecord, DNSProtocolResourceRecordAcceptedTypes } from "./Protocol/ProtocolTypes";
 import DomainName from "./Utils/DomainUtils";
-import ZoneHandler, { DNSZoneRequest, DNSZoneResponse } from "./ZoneHandler";
+import ZoneHandler, { DNSZoneRequest, DNSZoneResponse, ZoneResponderHandler } from "./ZoneHandler";
 import { simpleResponder } from "./Responders/SimpleResponder";
 import { simpleLoggingResponder } from "./Responders/SimpleLoggingResponder";
+
+const logger: winston.Logger = winston.createLogger({
+    level: 'info',
+    format: winston.format.simple(),
+    transports: [ new winston.transports.Console() ],
+});
 
 const server: DNSServer = new DNSServer();
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const com_queekus_responder = (zone: string, request: DNSZoneRequest, response: DNSZoneResponse): void =>
+const com_queekus_responder: ZoneResponderHandler = (logger: Logger | undefined, zone: string, request: DNSZoneRequest, response: DNSZoneResponse): void =>
 {
     if (request.zoneQuestion.qClass.value !== Class.IN)
         return;
@@ -41,7 +50,7 @@ const com_queekus_responder = (zone: string, request: DNSZoneRequest, response: 
 };
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const com_responder = (zone: string, request: DNSZoneRequest, response: DNSZoneResponse): void => {
+const com_responder: ZoneResponderHandler = (logger: Logger | undefined, zone: string, request: DNSZoneRequest, response: DNSZoneResponse): void => {
     if (request.zoneQuestion.qClass.value !== Class.IN)
         return;
 
@@ -90,6 +99,7 @@ const com_queekus_records: DNSProtocolResourceRecord<DNSProtocolResourceRecordAc
 
 server.subZone(
     new ZoneHandler(queekus_com_name)
+        .useLogger(logger)
         .use(simpleLoggingResponder)
         .authoritative(simpleResponder([
             {
@@ -103,10 +113,10 @@ server.subZone(
                 recordClass: Class.IN,
                 recordType: Type.A,
                 records: [
-                    DNSProtocolResourceRecord.of(queekus_com_name.clone("www"), Type.CNAME, Class.IN, 60 * 5, queekus_com_name),
+                    DNSProtocolResourceRecord.of(queekus_com_name.asSubdomain("www"), Type.CNAME, Class.IN, 60 * 5, queekus_com_name),
                     ...com_queekus_records
                 ]
             }
         ])));
 
-server.listen(() => console.log("DNS Server listening on port 53"));
+server.listen(() => logger.info("DNS Server listening on port 53"));

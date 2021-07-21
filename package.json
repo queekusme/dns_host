@@ -34,5 +34,9 @@
     },
     "publishConfig": {
         "access": "public"
+    },
+    "dependencies": {
+        "save": "^2.4.0",
+        "winston": "^3.3.3"
     }
 }

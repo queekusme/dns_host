@@ -23,9 +23,22 @@ export default class DomainName extends Parser<string>
             this._domain = `${this._domain}.`;
     }
 
-    public clone(withAddition: string = ""): DomainName
+    /**
+     * Clone this domain, returns an exact copy not maintaining references
+     */
+    public clone(): DomainName
     {
-        return new DomainName(withAddition.length > 0 ? `${withAddition}.${this._domain}` : this._domain);
+        return new DomainName(this._domain);
+    }
+
+    /**
+     * Extend a domain with a subdomain
+     *
+     * @param subdomain e.g. www for www.yourdomain.com
+     */
+    public asSubdomain(subdomain: string): DomainName
+    {
+        return new DomainName(`${subdomain}.${this._domain}`);
     }
 
     /**
